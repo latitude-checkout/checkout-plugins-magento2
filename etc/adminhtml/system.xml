@@ -35,6 +35,11 @@
                         <config_path>payment/latitude/merchant_secret</config_path>
                         <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     </field>
+
+                    <field id="store_merchant_id" translate="label" sortOrder="3" showInDefault="1" showInWebsite="1" showInStore="0">
+                        <label>Store Merchant ID</label>
+                        <config_path>payment/latitude/store_merchant_id</config_path>
+                    </field>
                     
                     <field id="test_mode" translate="label" type="select" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
                         <label>Is Test Mode ?</label>

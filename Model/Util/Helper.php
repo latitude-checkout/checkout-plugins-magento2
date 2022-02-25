@@ -12,6 +12,7 @@ class Helper
     const ACTIVE = 'active';
     const MERCHANT_ID = 'merchant_id';
     const MERCHANT_SECRET = 'merchant_secret';
+    const STORE_MERCHANT_ID = 'store_merchant_id';
     const TEST_MODE = 'test_mode';
     const DEBUG_MODE = 'debug_mode';
     const VERSION = "version";
@@ -55,6 +56,7 @@ class Helper
     {
         $config[self::ACTIVE] = boolval($this->_readConfig(self::ACTIVE));
         $config[self::MERCHANT_ID] = $this->_readConfig(self::MERCHANT_ID);
+        $config[self::STORE_MERCHANT_ID] = $this->_readConfig(self::STORE_MERCHANT_ID);
         $config[self::TEST_MODE] = boolval($this->_readConfig(self::TEST_MODE));
         $config[self::DEBUG_MODE] = boolval($this->_readConfig(self::DEBUG_MODE));
 
@@ -69,6 +71,11 @@ class Helper
     public function getMerchantSecret()
     {
         return $this->_readConfig(self::MERCHANT_SECRET);
+    }
+
+    public function getStoreMerchantId()
+    {
+        return $this->_readConfig(self::STORE_MERCHANT_ID);
     }
 
     public function isTestMode()
@@ -154,9 +161,11 @@ class Helper
     {
         $websiteId = $this->getWebsiteId();
         $rootNode = 'payment/' . LatitudeConstants::METHOD_CODE;
-    
+
         if (!empty($websiteId) && $websiteId) {
-            $val = $this->scopeConfig->getValue($rootNode . '/' . $path, \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES, $websiteId);
+            // Fallback to the store scope if nothing is found at the website level.
+            $val = $this->scopeConfig->getValue($rootNode . '/' . $path, \Magento\Store\Model\ScopeInterface::SCOPE_WEBSITES, $websiteId)
+                ?? $this->scopeConfig->getValue($rootNode . '/' . $path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE, $this->storeManager->getStore()->getStoreCode());
         } else {
             $val = $this->scopeConfig->getValue($rootNode . '/' . $path, 'default');
         }
