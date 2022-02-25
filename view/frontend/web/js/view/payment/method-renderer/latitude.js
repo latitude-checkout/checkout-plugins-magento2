@@ -3,11 +3,12 @@
 define([
   "jquery",
   "Magento_Checkout/js/model/quote",
+  "Magento_Customer/js/model/customer",
   "Magento_Checkout/js/view/payment/default",
   "mage/url",
   "Magento_Ui/js/model/messageList",
   "Magento_Customer/js/customer-data",
-], function ($, quote, Component, mageUrl, globalMessageList, customerData) {
+], function ($, quote, customer, Component, mageUrl, globalMessageList, customerData) {
   "use strict";
 
   return Component.extend({
@@ -82,16 +83,27 @@ define([
 
     completeOrder: function () {
       var url = mageUrl.build("latitude/payment/process");
+      // TODO: Need to remove the reliance on hard-coded element IDs as elements with those IDs
+      //       may or may not exist and the IDs could possibly change with Magento updates.
       var data = $("#co-shipping-form").serialize();
       var email = window.checkoutConfig.customerData.email;
 
       var ajaxRedirected = false;
 
-      if (!window.checkoutConfig.quoteData.customer_id) {
-        email = document.getElementById("customer-email").value;
+      if (!customer.isLoggedIn()) {
+        // NOTE: Previously the email value was fetched from the value of a hard-coded input ID of `customer-email`.
+        //       This both cannot be relied on to exist, and it may not contain the correct value.
+        //       For example, in some instances this field my be hidden an pre-filled by the browser with a value that
+        //       differs to what's stored against the quote object/model.
+        //       The KO quote "model" `Magento_Checkout/js/model/quote` has this value and it what the Magento core
+        //       uses to determine the current guest email address.
+        email = quote.guestEmail;
       }
 
-      data = data + "&cartId=" + quote.getQuoteId() + "&email=" + email;
+      // NOTE: Need to encode values in this query string otherwise valid emails characters such as `+`
+      //       are converted to ` ` characters and break the email address.
+      // TODO: Ideally this `data` variable should instead be an object rather than a string.
+      data = data + "&cartId=" + encodeURIComponent(quote.getQuoteId()) + "&email=" + encodeURIComponent(email);
 
       $.ajax({
         url: url,
