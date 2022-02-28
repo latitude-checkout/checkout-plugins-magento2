@@ -7,9 +7,10 @@
                 <model>Latitude\Checkout\Model\Payment</model>
                 <merchant_id />
                 <merchant_secret backend_model="Magento\Config\Model\Config\Backend\Encrypted" />
+                <store_merchant_id />
                 <test_mode>1</test_mode>
                 <debug_mode>1</debug_mode>
-                <version>v1.0.1</version>
+                <version>v1.0.4</version>
                 <order_status>pending</order_status>
                 <payment_action>sale</payment_action>
                 <title>Latitude Interest Free</title>
