@@ -10,7 +10,7 @@
                 <store_merchant_id />
                 <test_mode>1</test_mode>
                 <debug_mode>1</debug_mode>
-                <version>dev-draft-1.0.4</version>
+                <version>v1.0.4</version>
                 <order_status>pending</order_status>
                 <payment_action>sale</payment_action>
                 <title>Latitude Interest Free</title>
