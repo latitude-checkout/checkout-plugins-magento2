@@ -144,12 +144,17 @@ class PurchaseVerify {
 
         $payment->save();
 
+        $this->logger->info('Quote data: ', $quote->getData());
+        $this->logger->info('Shipping data: ', $quote->getShippingAddress()->getData());
+        $this->logger->info('Billing data: ', $quote->getBillingAddress()->getData());
+
         $this->_handleCustomerEmail($quote);
+        $this->_standardizeAddress($quote);
         $this->_ignoreAddressValidation($quote);
         
         $quote->save();
 
-        $this->quoteValidator->validateBeforeSubmit($quote);
+        //$this->quoteValidator->validateBeforeSubmit($quote);
         $order = $this->quoteManagement->submit($quote);
 
         if (!$order) {
@@ -217,17 +222,43 @@ class PurchaseVerify {
             return;
         }
 
+        if (!empty($quote->getBillingAddress()->getEmail())) {
+            $quote->setCustomerEmail((string)$quote->getBillingAddress()->getEmail());
+            return;
+        }
+
         if (!empty($quote->getShippingAddress()->getEmail())) {
             $quote->setCustomerEmail((string)$quote->getShippingAddress()->getEmail());
             return;
         }
 
-        if (!empty($quote->getBillingAddress()->getEmail())) {
-            $quote->setCustomerEmail((string)$quote->getBillingAddress()->getEmail());
-            return;
+        //if at this point quote's email still null, i.e. Shipping and Billing both have no email populated
+        if (empty($quote->getCustomerEmail()) && empty($quote->getBillingAddress()->getEmail()) && empty($quote->getShippingAddress()->getEmail())) {
+            $quote->getShippingAddress()->setShouldIgnoreValidation(true);
         }
     }
 
+    private function _standardizeAddress($quote){
+        $billing = $quote->getBillingAddress();
+        $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
+        $customerBillingData = $billing->exportCustomerAddress();
+
+        if ($shipping) {
+            if (!$shipping->getSameAsBilling()) {
+                $customerShippingData = $shipping->exportCustomerAddress();
+                $customerShippingData->setIsDefaultShipping(true);
+                $shipping->setCustomerAddressData($customerShippingData);
+                // Add shipping address to quote since customer Data Object does not hold address information
+                $quote->addCustomerAddress($customerShippingData);
+            } else {
+                $shipping->setCustomerAddressData($customerBillingData);
+                $customerBillingData->setIsDefaultShipping(true);
+            }
+        } else {
+            $customerBillingData->setIsDefaultShipping(true);
+        }
+    }
+    
     private function _ignoreAddressValidation($quote) {
         $quote->getBillingAddress()->setShouldIgnoreValidation(true);
 
