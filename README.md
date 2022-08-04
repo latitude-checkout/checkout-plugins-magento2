@@ -1,6 +1,6 @@
 # latitude-financial/checkout
 
-Payment gateway integration for Latitude Interest Free products
+Payment Gateway Integration for Latitude Interest Free products
 
 ## Install module
 
