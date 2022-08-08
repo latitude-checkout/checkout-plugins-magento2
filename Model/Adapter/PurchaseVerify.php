@@ -222,40 +222,26 @@ class PurchaseVerify {
             return;
         }
 
-        if (!empty($quote->getBillingAddress()->getEmail())) {
+        if (!empty($quote->getBillingAddress()) && !empty($quote->getBillingAddress()->getEmail())) {
             $quote->setCustomerEmail((string)$quote->getBillingAddress()->getEmail());
             return;
         }
 
-        if (!empty($quote->getShippingAddress()->getEmail())) {
+        if (!empty($quote->getShippingAddress()) && !empty($quote->getShippingAddress()->getEmail())) {
             $quote->setCustomerEmail((string)$quote->getShippingAddress()->getEmail());
             return;
-        }
-
-        //if at this point quote's email still null, i.e. Shipping and Billing both have no email populated
-        if (empty($quote->getCustomerEmail()) && empty($quote->getBillingAddress()->getEmail()) && empty($quote->getShippingAddress()->getEmail())) {
-            $quote->getShippingAddress()->setShouldIgnoreValidation(true);
         }
     }
 
     private function _standardizeAddress($quote){
         $billing = $quote->getBillingAddress();
         $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
-        $customerBillingData = $billing->exportCustomerAddress();
 
-        if ($shipping) {
-            if (!$shipping->getSameAsBilling()) {
-                $customerShippingData = $shipping->exportCustomerAddress();
-                $customerShippingData->setIsDefaultShipping(true);
-                $shipping->setCustomerAddressData($customerShippingData);
-                // Add shipping address to quote since customer Data Object does not hold address information
-                $quote->addCustomerAddress($customerShippingData);
-            } else {
-                $shipping->setCustomerAddressData($customerBillingData);
-                $customerBillingData->setIsDefaultShipping(true);
-            }
-        } else {
-            $customerBillingData->setIsDefaultShipping(true);
+        //if not virtual but shipping email empty, use billing address email info on shipping
+        if ($shipping && empty($shipping->getEmail())) {
+            $this->logger->info('Shipping address email empty, copying from billing: '.$billing->getEmail());
+            $shipping->setEmail($billing->getEmail());
+            $quote->setShippingAddress($shipping);
         }
     }
     
@@ -264,6 +250,9 @@ class PurchaseVerify {
 
         if (!$quote->getIsVirtual()) {
             $quote->getShippingAddress()->setShouldIgnoreValidation(true);
+            if (!$quote->getBillingAddress()->getEmail()) {
+                $quote->getBillingAddress()->setSameAsBilling(1);
+            }
         }
     }
 
