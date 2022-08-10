@@ -144,12 +144,17 @@ class PurchaseVerify {
 
         $payment->save();
 
+        $this->logger->info('Quote data: ', $quote->getData());
+        $this->logger->info('Shipping data: ', $quote->getShippingAddress()->getData());
+        $this->logger->info('Billing data: ', $quote->getBillingAddress()->getData());
+
         $this->_handleCustomerEmail($quote);
+        $this->_standardizeAddress($quote);
         $this->_ignoreAddressValidation($quote);
         
         $quote->save();
 
-        $this->quoteValidator->validateBeforeSubmit($quote);
+        //$this->quoteValidator->validateBeforeSubmit($quote);
         $order = $this->quoteManagement->submit($quote);
 
         if (!$order) {
@@ -217,22 +222,37 @@ class PurchaseVerify {
             return;
         }
 
-        if (!empty($quote->getShippingAddress()->getEmail())) {
-            $quote->setCustomerEmail((string)$quote->getShippingAddress()->getEmail());
+        if (!empty($quote->getBillingAddress()) && !empty($quote->getBillingAddress()->getEmail())) {
+            $quote->setCustomerEmail((string)$quote->getBillingAddress()->getEmail());
             return;
         }
 
-        if (!empty($quote->getBillingAddress()->getEmail())) {
-            $quote->setCustomerEmail((string)$quote->getBillingAddress()->getEmail());
+        if (!empty($quote->getShippingAddress()) && !empty($quote->getShippingAddress()->getEmail())) {
+            $quote->setCustomerEmail((string)$quote->getShippingAddress()->getEmail());
             return;
         }
     }
 
+    private function _standardizeAddress($quote){
+        $billing = $quote->getBillingAddress();
+        $shipping = $quote->isVirtual() ? null : $quote->getShippingAddress();
+
+        //if not virtual but shipping email empty, use billing address email info on shipping
+        if ($shipping && empty($shipping->getEmail())) {
+            $this->logger->info('Shipping address email empty, copying from billing: '.$billing->getEmail());
+            $shipping->setEmail($billing->getEmail());
+            $quote->setShippingAddress($shipping);
+        }
+    }
+    
     private function _ignoreAddressValidation($quote) {
         $quote->getBillingAddress()->setShouldIgnoreValidation(true);
 
         if (!$quote->getIsVirtual()) {
             $quote->getShippingAddress()->setShouldIgnoreValidation(true);
+            if (!$quote->getBillingAddress()->getEmail()) {
+                $quote->getBillingAddress()->setSameAsBilling(1);
+            }
         }
     }
 
